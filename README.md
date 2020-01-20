@@ -12,7 +12,7 @@ yt-mp3-dl <input file> <destination folder>
 ```
 
 Input file contains the list of YouTube videos you'd like to convert to MP3
-and download, as well as the corresponding filenames, formatting like so:
+and download, as well as the corresponding filenames, formatted like so:
 
 ```
 <youtube url> | <file name>
