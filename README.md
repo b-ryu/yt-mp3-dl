@@ -1,8 +1,8 @@
 # yt-mp3-dl
 
 In addition to Python3, requires:
-- `youtube-dl`
-- `FFmpeg`
+- [`youtube-dl`](https://ytdl-org.github.io/youtube-dl/index.html)
+- [`FFmpeg`](https://www.ffmpeg.org/)
 
 Both these tools should be on your `PATH`
 
