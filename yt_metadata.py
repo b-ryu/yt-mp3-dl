@@ -242,6 +242,11 @@ def yt_metadata():
     if failures:
         print('Failed to apply metadata to {f} files'.format(f=failures))
 
+    # Write album artwork data back to file
+    if cover_art_map and cover_art_map_file:
+        with open(cover_art_map_file, 'w') as f:
+            json.dump(cover_art_map, f, indent=4)
+
 
 if __name__ == '__main__':
     yt_metadata()
