@@ -12,7 +12,7 @@ Both these tools should be on your `PATH`
 
 ### Usage
 ```
-yt-mp3-dl <input file> <destination folder>
+yt_mp3_dl <input file> <destination folder>
 ```
 
 Input file contains the list of YouTube videos you'd like to convert to MP3
@@ -42,7 +42,7 @@ pip install -r requirements.txt
 
 ### Usage
 ```
-python3 yt-metadata <mp3 folder> <metadata config> <album art map (optional)>
+python3 yt_metadata <mp3 folder> <metadata config> <album art map (optional)>
 ```
 `mp3 folder` is the path to the folder on your computer containing the MP3 files you want to modify.
 `metadata config` is the path to the JSON config file that has all the metadata.
@@ -70,7 +70,7 @@ specified by the [`eyeD3` API](https://eyed3.readthedocs.io/en/latest/_modules/e
 ### Adding album cover art to your MP3
 There are several ways you can configure your script to add album art to your MP3 files.
 The script look for each of the following in order until it finds a suitable image, if at all.
-1. Include a `cover_art_path` in your metadata object. The value should be either an absolute (or relative
+1. Include a `song_art_path` or `album_art_path` in your metadata object. The value should be either an absolute (or relative
 to the script's working directory) path to the image file you'd like to embed as cover art.
     ```
       {
@@ -79,10 +79,10 @@ to the script's working directory) path to the image file you'd like to embed as
         "title": "Thriller",
         "album": "Thriller",
         "album_artist": "Michael Jackson",
-        "cover_art_path": "/Users/my_user/Images/thriller_cover_art.jpg"
+        "song_art_path": "/Users/my_user/Images/thriller_cover_art.jpg"
       }
     ```
-2. Include a `cover_art_url` in your metadata object. The value should a URL to the image resource you'd like
+2. Include a `song_art_url` or `album_art_url` in your metadata object. The value should a URL to the image resource you'd like
 to embed as your cover art.
     ```
       {
@@ -91,7 +91,7 @@ to embed as your cover art.
         "title": "Thriller",
         "album": "Thriller",
         "album_artist": "Michael Jackson",
-        "cover_art_url": "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png"
+        "song_art_url": "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png"
       }
     ```
 3. If either of these fields are omitted, and you passed in a path to `album art map` JSON config earlier 
