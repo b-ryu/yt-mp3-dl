@@ -81,10 +81,7 @@ def apply_cover_art_from_url(mp3_file, url):
 
 
 def apply_cover_art_from_map(mp3_file, data, art_map):
-    key = '{artist} - {album_name}'.format(
-        artist=data.get('album_artist', data['artist']),
-        album_name=data['album']
-    )
+    key = get_album_art_data_key(data)
 
     if key in art_map:
         album_art_data = art_map[key]
@@ -100,21 +97,57 @@ def apply_cover_art_from_map(mp3_file, data, art_map):
     return False
 
 
+def add_album_art_data(art_map, data, path=None, url=None):
+    if art_map is None or data is None or (path is None and url is None):
+        return
+
+    art_map_key = get_album_art_data_key(data)
+    album_art_data = art_map.get(art_map_key, {})
+
+    if path is not None:
+        album_art_data['path'] = path
+    if url is not None:
+        album_art_data['url'] = url
+
+    art_map[art_map_key] = album_art_data
+
+
+def get_album_art_data_key(data):
+    if 'album' in data and ('artist' in data or 'album_artist' in data):
+        return '{artist} - {album_name}'.format(
+            artist=data.get('album_artist', data['artist']),
+            album_name=data['album']
+        )
+    else:
+        return None
+
+
 def set_album_cover_art(mp3_file, data, art_map=None):
-    # Check for files on computer
-    if 'cover_art_path' in data:
-        if apply_cover_art_from_file(mp3_file, data['cover_art_path']):
+    # Check for files on computer for song-specific cover art
+    if 'song_art_path' in data:
+        if apply_cover_art_from_file(mp3_file, data['song_art_path']):
             return
 
-    # Check for URLs
-    if 'cover_art_url' in data:
-        if apply_cover_art_from_url(mp3_file, data['cover_art_url']):
+    # Check for URLs for song-specific cover art
+    if 'song_art_url' in data:
+        if apply_cover_art_from_url(mp3_file, data['song_art_url']):
+            return
+
+    # Check for files on computer for song-specific cover art
+    if 'album_art_path' in data:
+        if apply_cover_art_from_file(mp3_file, data['album_art_path']):
+            add_album_art_data(art_map, data, path=data['album_art_path'])
+            return
+
+    # Check for URLs for song-specific cover art
+    if 'album_art_url' in data:
+        if apply_cover_art_from_url(mp3_file, data['album_art_url']):
+            add_album_art_data(art_map, data, url=data['album_art_url'])
             return
 
     # Check map
-    if art_map and 'album' in data and ('artist' in data or 'album_artist' in data):
-        if apply_cover_art_from_map(mp3_file, data, art_map):
-            return
+    if art_map and get_album_art_data_key(data) is not None:
+        apply_cover_art_from_map(mp3_file, data, art_map)
 
     return
 
@@ -139,7 +172,7 @@ def apply_mp3_metadata(data, folder, cover_art=None):
     mp3_file.tag.save()
 
 
-if __name__ == '__main__':
+def yt_metadata():
     # Check arguments
     if len(sys.argv) < 3:
         print('Too few arguments; pass in at least a MP3 file folder and JSON config path to this script')
@@ -177,7 +210,7 @@ if __name__ == '__main__':
                 cover_art_map = json.load(f)
         except Exception as e:
             print('Could not load cover art map, skipping: {error}'.format(error=str(e)))
-            cover_art_map_file = None
+            cover_art_map = None
     else:
         cover_art_map = None
 
@@ -208,3 +241,7 @@ if __name__ == '__main__':
     print('Successfully applied metadata to {s} files'.format(s=successes))
     if failures:
         print('Failed to apply metadata to {f} files'.format(f=failures))
+
+
+if __name__ == '__main__':
+    yt_metadata()
