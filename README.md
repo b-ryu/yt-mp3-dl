@@ -1,11 +1,11 @@
+# yt-mp3-dl
+
 These are some Python scripts I wrote for batch downloading/managing MP3 files from YouTube (WIP).
 
 - **`yt-mp3-dl`**: for batch downloading MP3 from YouTube
 - **`yt-metadata`**: for batch managing metadata for MP3 files
 - **`yt-dl-metadata`**: combines the functionality of the previous two scripts into one
   (TODO: update README)
-
-# yt-mp3-dl
 
 In addition to Python3, requires:
 
