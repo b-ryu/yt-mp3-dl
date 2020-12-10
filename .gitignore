@@ -1,0 +1,4 @@
+testfolder/*
+config.json
+songs.txt
+.DS_Store
