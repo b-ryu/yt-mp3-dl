@@ -1,1 +1,2 @@
-eyeD3
+eyeD3==0.9.5
+libmagic
