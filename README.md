@@ -17,7 +17,7 @@ Both these tools should be on your `PATH`.
 ### Usage
 
 ```
-yt_mp3_dl <input file> <destination folder>
+python3 yt_mp3_dl <input file> <destination folder>
 ```
 
 Input file contains the list of YouTube videos you'd like to convert to MP3
@@ -47,6 +47,8 @@ Before using this script you need to install dependencies using
 ```
 pip install -r requirements.txt
 ```
+
+**Note:** `eyeD3` requires you install `libmagic`.
 
 ### Usage
 
