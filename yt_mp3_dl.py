@@ -6,6 +6,8 @@ import subprocess
 # Logging helpers
 # #################################################################################################
 
+DIVIDER = '==============================================================='
+
 def log(s):
     print('[YT-MP3-DL LOG]: {}'.format(s))
 
@@ -100,20 +102,20 @@ def download_yt(url, dest_folder, filename, lazy=False, clean=True):
 
             # Download M4A
             dl_m4a(m4a_path, url)
-            logs.append('downloading M4A "{}" ({})'.format(url, filename))
+            logs.append('downloading M4A "{}"'.format(url, filename))
     else:
         # Download M4A
         dl_m4a(m4a_path, url)
-        logs.append('downloading M4A "{}" ({})'.format(url, filename))
+        logs.append('downloading M4A "{}"'.format(url, filename))
 
     # Convert M4A to MP3
     convert_m4a_to_mp3(m4a_path, mp3_path)
-    logs.append('converting M4A to MP3: "{}"'.format(filename))
+    logs.append('converting M4A to MP3 "{}"'.format(filename))
 
     # Clean up M4A
     if clean:
         os.remove(m4a_path)
-
+    
     return logs
 
 # #################################################################################################
@@ -127,15 +129,19 @@ if __name__ == '__main__':
         # ==================================
         args = sys.argv[1:]
 
-        if len(args) != 2:
-            error('wrong args; should be "<input-file> <destination-folder>"')
+        if len(args) < 2:
+            error('wrong args; should be "<input-file> <dest-folder> [--lazy] [--no-clean]"')
             sys.exit(1)
         
-        input_file, dest_folder = args
+        input_file, dest_folder, *flags = args
 
         if not (os.path.isfile(input_file) and os.path.isdir(dest_folder)):
             error('check that both input file and destination folder exist')
             sys.exit(1)
+
+        # Flags: --lazy, --no-clean
+        lazy = '--lazy' in flags
+        clean = '--no-clean' not in flags
 
         # ==================================
         # Parse URL file
@@ -152,13 +158,14 @@ if __name__ == '__main__':
         # ==================================
         for url, filename in url_filename_pairs:
             try:
-                msgs = download_yt(url, dest_folder, filename, lazy=False)
+                msgs = download_yt(url, dest_folder, filename, lazy=lazy, clean=clean)
 
-                for msg in msgs:
-                    log(msg)
+                log(DIVIDER)
+                for msg in msgs: log(msg)
             except Exception as e:
-                error('could not download "{filename}" ({url}): {e}'.format(filename=filename, url=url, err=e))
+                log(DIVIDER)
+                error('could not download "{filename}" ({url}): {e}'.format(filename=filename, url=url, e=e))
 
-            log('===============================================================')
+        log(DIVIDER) if len(url_filename_pairs) else None
     except Exception as e:
-        error('"{}"'.format(e))
+        error(e)
