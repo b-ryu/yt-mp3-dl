@@ -1,17 +1,9 @@
-#
-# Script for batch modifying MP3 file metadata using JSON configs
-# Make sure that you "pip install -r requirements.txt" before running this script, as it relies
-# on third-party libraries (i.e. eyeD3)
-#
-
-
 import sys
 import json
 import os
 from urllib.request import urlopen
 
 import eyed3
-
 
 def apply_metadata_tag(mp3_file, tag_name, data, fallback_tag_name=None):
     tag_value = data.get(tag_name, data.get(fallback_tag_name) if fallback_tag_name else None)
@@ -20,7 +12,6 @@ def apply_metadata_tag(mp3_file, tag_name, data, fallback_tag_name=None):
         return
 
     setattr(mp3_file.tag, tag_name, tag_value)
-
 
 def get_mime_type(url_or_path):
     mime_map = {
@@ -35,7 +26,6 @@ def get_mime_type(url_or_path):
             mime_type = mime_map[file_ext]
 
     return mime_type
-
 
 def apply_cover_art_from_file(mp3_file, filepath):
     # Check that file exists
@@ -61,7 +51,6 @@ def apply_cover_art_from_file(mp3_file, filepath):
 
     return True
 
-
 def apply_cover_art_from_url(mp3_file, url):
     try:
         response = urlopen(url)
@@ -79,7 +68,6 @@ def apply_cover_art_from_url(mp3_file, url):
 
     return True
 
-
 def apply_cover_art_from_map(mp3_file, data, art_map):
     key = get_album_art_data_key(data)
 
@@ -96,7 +84,6 @@ def apply_cover_art_from_map(mp3_file, data, art_map):
 
     return False
 
-
 def add_album_art_data(art_map, data, path=None, url=None):
     if art_map is None or data is None or (path is None and url is None):
         return
@@ -111,7 +98,6 @@ def add_album_art_data(art_map, data, path=None, url=None):
 
     art_map[art_map_key] = album_art_data
 
-
 def get_album_art_data_key(data):
     if 'album' in data and ('artist' in data or 'album_artist' in data):
         return '{artist} - {album_name}'.format(
@@ -120,7 +106,6 @@ def get_album_art_data_key(data):
         )
     else:
         return None
-
 
 def set_album_cover_art(mp3_file, data, art_map=None):
     # Check for files on computer for song-specific cover art
@@ -151,7 +136,6 @@ def set_album_cover_art(mp3_file, data, art_map=None):
 
     return
 
-
 def apply_mp3_metadata(data, folder, cover_art=None):
     mp3_file_path = os.path.join(folder, data['filename'])
 
@@ -170,7 +154,6 @@ def apply_mp3_metadata(data, folder, cover_art=None):
     set_album_cover_art(mp3_file, data, cover_art)
 
     mp3_file.tag.save()
-
 
 def yt_metadata():
     # Check arguments
@@ -246,7 +229,6 @@ def yt_metadata():
     if cover_art_map and cover_art_map_file:
         with open(cover_art_map_file, 'w') as f:
             json.dump(cover_art_map, f, indent=4)
-
 
 if __name__ == '__main__':
     yt_metadata()

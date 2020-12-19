@@ -1,11 +1,3 @@
-# Script that unifies functionality between yt-mp3-dl and yt-metadata
-#
-# Args (in order):
-# - destination/working folder
-# - JSON file containing all downloading data/metadata
-# - Album artwork mapping JSON
-
-
 import os
 import sys
 import json
@@ -14,17 +6,14 @@ import re
 from yt_mp3_dl import download_song
 from yt_metadata import apply_mp3_metadata
 
-
 def clean_filename(s):
     return re.sub(r'(?u)[^-\w.]', '', str(s).strip().replace(' ', '_'))
-
 
 def generate_filename(data):
     if 'title' in data:
         return clean_filename(data.get('artist', '').replace(' ', '') + '_' + data['title'].replace(' ', '') + '.mp3')
     else:
         return clean_filename(data['yt_url'].replace('https://www.youtube.com/watch?v=', '') + '.mp3')
-
 
 def yt_dl_metadata():
     # Validate args
@@ -129,7 +118,6 @@ def yt_dl_metadata():
     print('Successfully downloaded and configured {s} songs'.format(s=successes))
     if failures:
         print('Failed to download or configure {f} songs'.format(f=failures))
-
 
 if __name__ == '__main__':
     yt_dl_metadata()

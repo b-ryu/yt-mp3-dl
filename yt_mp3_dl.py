@@ -1,107 +1,164 @@
-#!/usr/local/bin/python3
-
-#
-# Script for downloading batches of MP3s from YouTube using youtube-dl and FFmpeg executables
-# Requires that youtube-dl and FFmpeg tools are on user's PATH
-#
-# YouTube doesn't support downloading MP3 straight up, so we download M4A and convert it using the FFmpeg utility
-#
-
-
 import sys
 import os
 import subprocess
 
+# #################################################################################################
+# Logging helpers
+# #################################################################################################
 
-def get_url_and_name(line):
-    # line should in the format {youtube_url} | {file_name}
-    yt_url, separator, filename = line.partition(' | ')
+def log(s):
+    print('[YT-MP3-DL LOG]: {}'.format(s))
 
-    if not separator:
-        raise Exception('line is missing separator: {line}'.format(line=line))
+def error(s):
+    print('[YT-MP3-DL ERROR]: {}'.format(s))
 
-    return yt_url.strip(), filename.strip()
+# #################################################################################################
+# parse_url_filename_pair
+# #################################################################################################
 
+'''
+    Parse well-formatted line into URL and filename
+    Returns list of tuples (url, filename)
+    Raises exception if line cannot be parsed
+'''
+def parse_url_filename_pair(line):
+    url, _, filename = line.partition(' | ')
 
-def yt_mp3_dl():
-    # Check arguments
-    if len(sys.argv) != 3:
-        print('Too many/few arguments; pass in a input file path and destination folder path to this script')
-        sys.exit(2)
+    if not (url and filename):
+        raise Exception()
 
-    input_file = sys.argv[1]
-    dest_folder = sys.argv[2]
+    return url.strip(), filename.strip()
 
-    if not os.path.isfile(input_file):
-        print('{file} does not exist, please pass in a properly formatted existing file'.format(file=input_file))
-        sys.exit(1)
-    elif not os.path.isdir(dest_folder):
-        print('{folder} does not exist, please pass in a existing destination directory'.format(folder=dest_folder))
-        sys.exit(1)
+# #################################################################################################
+# Command-line helpers
+# #################################################################################################
 
-    # Parse file
-    try:
-        with open(input_file) as f:
-            url_name_pairs = [get_url_and_name(line) for line in f.readlines()]
-    except Exception as e:
-        print('Could not parse file; please check your formatting: {error}'.format(error=str(e)))
-        sys.exit(1)
+'''
+    Runs command-line program
+    Takes in a list of args
+    Will raise an exception if the command fails
+'''
+def run_cmd(cmd):
+    proc_result = subprocess.run(
+        cmd, 
+        stdout=subprocess.DEVNULL, 
+        stderr=subprocess.DEVNULL
+    )
 
-    # Begin downloads
-    for url, name in url_name_pairs:
-        download_song(dest_folder, name, url)
-        print('================================================================')
+    if proc_result.returncode:
+        raise Exception()
 
+'''
+    Runs youtube-dl utility to download YouTube video as M4A at url to path
+    Note that YouTube usually doesn't offer MP3 audio downloads, 
+    necessitating an intermediate conversion from M4A
+'''
+def dl_m4a(path, url):
+    run_cmd(['youtube-dl', '-o', path, '-f' '140', url])
 
-def download_song(dest_folder, name, url, lazy=False):
-    try:
-        m4a_filepath = os.path.join(dest_folder, '{name}.m4a'.format(name=name))
-        mp3_filepath = os.path.join(dest_folder, '{name}.mp3'.format(name=name))
+'''
+    Runs ffmpeg utility to convert M4A m4a_path to MP3 mp3_path
+'''
+def convert_m4a_to_mp3(m4a_path, mp3_path):
+    run_cmd(['ffmpeg', '-i', m4a_path, '-acodec', 'libmp3lame', '-aq', '2', mp3_path])
 
-        if os.path.isfile(m4a_filepath):
-            raise Exception('There already exists an m4a file with name "{name}" in {dest}'.format(
-                name=name, dest=dest_folder
-            ))
-        elif os.path.isfile(mp3_filepath):
-            if lazy:
-                print(
-                    'There already exists an mp3 file with name "{name}" in {dest}. '
-                    'Since "lazy" flag was set, assuming that '
-                    'this is the MP3 we\'re looking for'.format(name=name, dest=dest_folder)
-                )
+# #################################################################################################
+# download_yt
+# #################################################################################################
 
-                return None
-            else:
-                raise Exception(
-                    'There already exists an mp3 file with name "{name}" in {dest}. '
-                    'Since "lazy" flag was not set, assuming this is error'.format(name=name, dest=dest_folder)
-                )
+'''
+    Downloads a YouTube video at url as MP3
+    Stores in dest_folder under filename.mp3
+    If lazy is true, will not overwrite M4A/MP3 files
+    If clean is true, will clean M4A download files
+    Returns a list of log messages
+'''
+def download_yt(url, dest_folder, filename, lazy=False, clean=True):
+    logs = []
 
-        # Download m4a from YouTube=
-        subprocess.run([
-            'youtube-dl', '-o', m4a_filepath, '-f' '140', url
-        ], stdout=subprocess.DEVNULL)
+    # Construct filenames
+    m4a_path = os.path.join(dest_folder, '{name}.m4a'.format(name=filename))
+    mp3_path = os.path.join(dest_folder, '{name}.mp3'.format(name=filename))
 
-        print('Downloaded "{name}" m4a file from YouTube'.format(name=name))
+    # Check if MP3 already exists
+    # Depending on lazy flag, skip or delete
+    if os.path.isfile(mp3_path):
+        if lazy:
+            return ['"{}" MP3 already exists; skipping'.format(filename)]
+        
+        os.remove(mp3_path)
+        logs.append('"{}" MP3 already exists; deleting'.format(filename))
+    
+    # Check if M4A download already exists
+    # Depending on lazy flag, re-download or delete
+    if os.path.isfile(m4a_path):
+        if lazy:
+            logs.append('"{}" M4A already exists; skipping download'.format(filename))
+        else:
+            os.remove(m4a_path)
+            logs.append('"{}" M4A already exists; deleting'.format(filename))
 
-        # Convert m4a to mp3
-        subprocess.run([
-            'ffmpeg', '-i', m4a_filepath, '-acodec', 'libmp3lame', '-aq', '2', mp3_filepath
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Download M4A
+            dl_m4a(m4a_path, url)
+            logs.append('downloading M4A "{}" ({})'.format(url, filename))
+    else:
+        # Download M4A
+        dl_m4a(m4a_path, url)
+        logs.append('downloading M4A "{}" ({})'.format(url, filename))
 
-        print('Converted "{name}" from m4a to mp3'.format(name=name))
+    # Convert M4A to MP3
+    convert_m4a_to_mp3(m4a_path, mp3_path)
+    logs.append('converting M4A to MP3: "{}"'.format(filename))
 
-        # Delete m4a
-        os.remove(m4a_filepath)
+    # Clean up M4A
+    if clean:
+        os.remove(m4a_path)
 
-        print('Deleted "{name}" m4a file'.format(name=name))
+    return logs
 
-        return True
-    except Exception as e:
-        print('Failed to download "{name}" mp3 from YouTube: {error}'.format(name=name, error=str(e)))
-
-        return False
-
+# #################################################################################################
+# Main method
+# #################################################################################################
 
 if __name__ == '__main__':
-    yt_mp3_dl()
+    try:
+        # ==================================
+        # Parse/validate args
+        # ==================================
+        args = sys.argv[1:]
+
+        if len(args) != 2:
+            error('wrong args; should be "<input-file> <destination-folder>"')
+            sys.exit(1)
+        
+        input_file, dest_folder = args
+
+        if not (os.path.isfile(input_file) and os.path.isdir(dest_folder)):
+            error('check that both input file and destination folder exist')
+            sys.exit(1)
+
+        # ==================================
+        # Parse URL file
+        # ==================================
+        try:
+            with open(input_file) as f:
+                url_filename_pairs = [parse_url_filename_pair(l) for l in f.readlines()]
+        except Exception as e:
+            error('could not parse file "{}"; check README for format'.format(urls_and_filenames))
+            sys.exit(1)
+
+        # ==================================
+        # Download MP3s
+        # ==================================
+        for url, filename in url_filename_pairs:
+            try:
+                msgs = download_yt(url, dest_folder, filename, lazy=False)
+
+                for msg in msgs:
+                    log(msg)
+            except Exception as e:
+                error('could not download "{filename}" ({url}): {e}'.format(filename=filename, url=url, err=e))
+
+            log('===============================================================')
+    except Exception as e:
+        error('"{}"'.format(e))
