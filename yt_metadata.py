@@ -5,6 +5,22 @@ from urllib.request import urlopen
 
 import eyed3
 
+# #################################################################################################
+# Logging helpers
+# #################################################################################################
+
+DIVIDER = '==============================================================='
+
+def log(s):
+    print('[YT-METADATA LOG]: {}'.format(s))
+
+def error(s):
+    print('[YT-METADATA ERROR]: {}'.format(s))
+
+# #################################################################################################
+# Helpers
+# #################################################################################################
+
 def apply_metadata_tag(mp3_file, tag_name, data, fallback_tag_name=None):
     tag_value = data.get(tag_name, data.get(fallback_tag_name) if fallback_tag_name else None)
 
@@ -156,28 +172,6 @@ def apply_mp3_metadata(data, folder, cover_art=None):
     mp3_file.tag.save()
 
 def yt_metadata():
-    # Check arguments
-    if len(sys.argv) < 3:
-        print('Too few arguments; pass in at least a MP3 file folder and JSON config path to this script')
-        sys.exit(2)
-
-    mp3_folder = sys.argv[1]
-    json_config = sys.argv[2]
-    if len(sys.argv) > 3:
-        cover_art_map_file = sys.argv[3]
-    else:
-        cover_art_map_file = None
-
-    # Check that folder and file exist
-    if not os.path.isfile(json_config) or not os.path.isdir(mp3_folder):
-        print('Either {dir} is not an existing directory or {file} is not an existing file'.format(
-            dir=mp3_folder, file=json_config
-        ))
-        sys.exit(1)
-    elif cover_art_map_file is not None and not os.path.isfile(cover_art_map_file):
-        print('{file} is not an existing file, ignoring cover art map'.format(file=cover_art_map_file))
-        cover_art_map_file = None
-
     # Parse JSON
     # This file will contain all the metadata you'd like to apply to your MP3 files
     try:
@@ -230,5 +224,36 @@ def yt_metadata():
         with open(cover_art_map_file, 'w') as f:
             json.dump(cover_art_map, f, indent=4)
 
+# #################################################################################################
+# Main method
+# #################################################################################################
+
 if __name__ == '__main__':
-    yt_metadata()
+    try:
+        # ==================================
+        # Parse/validate args
+        # ==================================
+        args = sys.argv[1:]
+
+        if len(args) < 2:
+            error('wrong args; should be "<mp3-folder> <metadata-config> [<cover-art-config>]"')
+            sys.exit(1)
+        
+        mp3_folder, metadata-config, *rest = args
+        cover_art_config = rest[0] if len(rest) else None
+
+        if not (
+            os.path.isdir(mp3_folder) and 
+            os.path.isfile(metadata-config) and
+            (cover_art_config is None or os.path.isfile(cover_art_config))
+        ):
+            error('check that all paths are existing files/folders')
+            sys.exit(1)
+
+        # ==================================
+        # Read/parse config data
+        # ==================================
+
+
+    except Exception as e:
+        error(e)
