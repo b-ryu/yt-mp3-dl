@@ -1,4 +1,5 @@
-testfolder/*
-config.json
-songs.txt
+# Test files
+test*
+
+# OS X
 .DS_Store
