@@ -1,4 +1,4 @@
-# yt-mp3-dl
+# YouTube MP3 DL
 
 These are some Python scripts I wrote for downloading/managing MP3 files from YouTube.
 
