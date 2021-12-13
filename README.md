@@ -1,104 +1,91 @@
 # yt-mp3-dl
 
-These are some Python scripts I wrote for batch downloading/managing MP3 files from YouTube (WIP).
+These are some Python scripts I wrote for downloading/managing MP3 files from YouTube.
 
-- **`yt-mp3-dl`**: for batch downloading MP3 from YouTube
-- **`yt-metadata`**: for batch managing metadata for MP3 files
-- **`yt-dl-metadata`**: combines the functionality of the previous two scripts into one
-  (TODO: update README)
+- **`yt-mp3-dl`**: for downloading MP3 files from YouTube videos
+- **`yt-metadata`**: for managing metadata for MP3 files
 
-In addition to Python3, requires:
+## Contents
+
+- [`yt-mp3-dl`](#yt-mp3-dl)
+  - [Requirements](#yt-mp3-dl-requirements)
+  - [Usage](#yt-mp3-dl-usage)
+- [`yt-metadata`](#yt-metadata)
+  - [Requirements](#yt-metadata-requirements)
+  - [Usage](#yt-metadata-usage)
+    - [Metadata config](#metadata-config)
+    - [Cover art config](#cover-art-config)
+
+## `yt-mp3-dl`
+
+### `yt-mp3-dl` requirements
+
+Requires Python 3.
+
+`yt-mp3-dl` requires that you have these programs on your `PATH`:
 
 - [`youtube-dl`](https://ytdl-org.github.io/youtube-dl/index.html)
 - [`FFmpeg`](https://www.ffmpeg.org/)
 
-Both these tools should be on your `PATH`.
+### `yt-mp3-dl` usage
 
-### Usage
-
-```
-python3 yt_mp3_dl <input file> <destination folder>
+```sh
+python3 yt-mp3-dl.py <input-file> <dest-folder> [--lazy] [--clean]
 ```
 
-Input file contains the list of YouTube videos you'd like to convert to MP3
-and download, as well as the corresponding filenames, formatted like so:
+`<input-file>`: path to a list of YouTube URLs and destination names, formatted like so:
 
 ```
-<youtube url> | <file name>
-<youtube url> | <file name>
-<youtube url> | <file name>
-...
+https://www.youtube.com/watch?v=FveF-we6lcE | monke
+https://www.youtube.com/watch?v=KMU0tzLwhbE | developers
+https://www.youtube.com/watch?v=dQw4w9WgXcQ | trust-me
 ```
 
-For example, if my input file is `input.txt` and contains
+`<dest-folder>`: path to a destination folder
 
-```
-https://www.youtube.com/watch?v=dQw4w9WgXcQ | some innocuous song
-```
+The flags `--lazy` and `--clean` do the following:
 
-and I run `yt-mp3-dl input.txt /Users/myname/Music`,
-the script should download and convert the video's audio and place it at
-`/Users/myname/Music/some innocuous song.mp3`
+- `--lazy`: if set, then the script will not overwrite existing files of the same name (default behaviour)
+- `--no-clean`: if set, will leave `.m4a` download files instead of deleting them afterwards
 
-# yt-metadata
+## `yt-metadata`
 
-Before using this script you need to install dependencies using
+### `yt-metadata` requirements
 
-```
+Requires Python 3.
+
+Run the following (or equivalent) to install the Python dependencies:
+
+```sh
 pip install -r requirements.txt
 ```
 
-### Usage
+### `yt-metadata` usage
 
-```
-python3 yt_metadata <mp3 folder> <metadata config> <album art map (optional)>
-```
-
-`mp3 folder` is the path to the folder on your computer containing the MP3 files you want to modify.
-`metadata config` is the path to the JSON config file that has all the metadata.
-See below for more details on the optional `album art map` parameter.
-
-### Config structure
-
-`metadata config` should contain a well-formatted array of JSON objects, each one containing the metadata
-for a different MP3 file. For example, the following JSON contains the metadata for a single MP3 file called
-`test.mp3`
-
-```
-[
-  {
-    "filename": "test.mp3",
-    "artist": "Michael Jackson",
-    "title": "Thriller",
-    "album": "Thriller",
-    "album_artist": "Michael Jackson"
-  }
-]
+```sh
+python3 yt-metadata.py <mp3-folder> <metadata-config> [<cover-art-config>]
 ```
 
-Only `filename` is required, the rest will be set if they are available.
-The fields in the metadata object are identical to their counterparts
-specified by the [`eyeD3` API](https://eyed3.readthedocs.io/en/latest/_modules/eyed3/id3/tag.html).
+`<mp3-folder>` should be a path to the folder containing your MP3 files whose metadata you wish to modify.
 
-### Adding album cover art to your MP3
+`<metadata-config>` should be a path to JSON config containing your metadata for those files. [More details below](#meta-usage-meta).
 
-There are several ways you can configure your script to add album art to your MP3 files.
-The script looks for each of the following in order until it finds a suitable image, if at all.
+You can also optionally pass in a `<cover-art-config>`, which should be a path to JSON config detailing the cover art for those files. [More details below](#meta-usage-art).
 
-1. Include a `song_art_path` or `album_art_path` in your metadata object. The value should be either an absolute (or relative
-   to the script's working directory) path to the image file you'd like to embed as cover art.
-   `{ "filename": "test.mp3", "artist": "Michael Jackson", "title": "Thriller", "album": "Thriller", "album_artist": "Michael Jackson", "song_art_path": "/Users/my_user/Images/thriller_cover_art.jpg" }`
-2. Include a `song_art_url` or `album_art_url` in your metadata object. The value should a URL to the image resource you'd like
-   to embed as your cover art.
-   `{ "filename": "test.mp3", "artist": "Michael Jackson", "title": "Thriller", "album": "Thriller", "album_artist": "Michael Jackson", "song_art_url": "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png" }`
-3. If either of these fields are omitted, and you passed in a path to `album art map` JSON config earlier
-   (see usage details above), then the script will look through it to see if it contains details on
-   what image it should use. `album art map` should be path to a JSON file structured something like below:
-   `{ "Michael Jackson - Thriller": { "path": "/Users/my_user/Images/thriller_cover_art.jpg", "url": "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png" } }`
-   The key should be structured as `<album artist (or artist)> - <album name>`. The value is a object
-   containing either `path` or `url` fields (or both, but the script will default to `path`) pointing to
-   an image file to use as cover art (similar to the previous two options).
-   This may be useful
-   if you are embedding metadata and album art for a bunch of songs from the same album, and don't feel like
-   copying in a `path` or `url` field into each of the song's metadata objects. Instead you can set it once
-   and have it be applied to every song the script recognizes as being part of that album.
+#### Metadata config
+
+A metadata config is a JSON file containing an array of objects detailing the song metadata for a MP3 file. Below is an example config for one song:
+
+```json
+{}
+```
+
+Only the `filename` field is required. The config supports fields in the ID3 spec as described in the [`eyeD3` API]().
+
+#### Cover art config
+
+A cover art config is another JSON config that helps configure album art for specific albums. Instead of adding/removing cover art fields for each song in a specific album, you can write a single album entry in this config and pass it to `yt_metadata`. For instance:
+
+```json
+{}
+```
