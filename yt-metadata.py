@@ -1,10 +1,3 @@
-#
-# Script for batch modifying MP3 file metadata using JSON configs
-# Make sure that you "pip install -r requirements.txt" before running this script, as it relies
-# on third-party libraries (i.e. eyeD3)
-#
-
-
 import sys
 import json
 import os
@@ -12,6 +5,31 @@ from urllib.request import urlopen
 
 import eyed3
 
+# #################################################################################################
+# Logging helpers
+# #################################################################################################
+
+DIVIDER = '==============================================================='
+
+def log(s):
+    print('[YT-METADATA LOG]: {}'.format(s))
+
+def error(s):
+    print('[YT-METADATA ERROR]: {}'.format(s))
+
+# #################################################################################################
+# Validators
+# #################################################################################################
+
+def is_list(l):
+    return isinstance(l, list)
+
+def is_dict(d):
+    return isinstance(d, dict)
+
+# #################################################################################################
+# Helpers
+# #################################################################################################
 
 def apply_metadata_tag(mp3_file, tag_name, data, fallback_tag_name=None):
     tag_value = data.get(tag_name, data.get(fallback_tag_name) if fallback_tag_name else None)
@@ -20,7 +38,6 @@ def apply_metadata_tag(mp3_file, tag_name, data, fallback_tag_name=None):
         return
 
     setattr(mp3_file.tag, tag_name, tag_value)
-
 
 def get_mime_type(url_or_path):
     mime_map = {
@@ -35,7 +52,6 @@ def get_mime_type(url_or_path):
             mime_type = mime_map[file_ext]
 
     return mime_type
-
 
 def apply_cover_art_from_file(mp3_file, filepath):
     # Check that file exists
@@ -61,7 +77,6 @@ def apply_cover_art_from_file(mp3_file, filepath):
 
     return True
 
-
 def apply_cover_art_from_url(mp3_file, url):
     try:
         response = urlopen(url)
@@ -79,7 +94,6 @@ def apply_cover_art_from_url(mp3_file, url):
 
     return True
 
-
 def apply_cover_art_from_map(mp3_file, data, art_map):
     key = get_album_art_data_key(data)
 
@@ -96,7 +110,6 @@ def apply_cover_art_from_map(mp3_file, data, art_map):
 
     return False
 
-
 def add_album_art_data(art_map, data, path=None, url=None):
     if art_map is None or data is None or (path is None and url is None):
         return
@@ -111,7 +124,6 @@ def add_album_art_data(art_map, data, path=None, url=None):
 
     art_map[art_map_key] = album_art_data
 
-
 def get_album_art_data_key(data):
     if 'album' in data and ('artist' in data or 'album_artist' in data):
         return '{artist} - {album_name}'.format(
@@ -120,7 +132,6 @@ def get_album_art_data_key(data):
         )
     else:
         return None
-
 
 def set_album_cover_art(mp3_file, data, art_map=None):
     # Check for files on computer for song-specific cover art
@@ -151,7 +162,6 @@ def set_album_cover_art(mp3_file, data, art_map=None):
 
     return
 
-
 def apply_mp3_metadata(data, folder, cover_art=None):
     mp3_file_path = os.path.join(folder, data['filename'])
 
@@ -171,57 +181,7 @@ def apply_mp3_metadata(data, folder, cover_art=None):
 
     mp3_file.tag.save()
 
-
 def yt_metadata():
-    # Check arguments
-    if len(sys.argv) < 3:
-        print('Too few arguments; pass in at least a MP3 file folder and JSON config path to this script')
-        sys.exit(2)
-
-    mp3_folder = sys.argv[1]
-    json_config = sys.argv[2]
-    if len(sys.argv) > 3:
-        cover_art_map_file = sys.argv[3]
-    else:
-        cover_art_map_file = None
-
-    # Check that folder and file exist
-    if not os.path.isfile(json_config) or not os.path.isdir(mp3_folder):
-        print('Either {dir} is not an existing directory or {file} is not an existing file'.format(
-            dir=mp3_folder, file=json_config
-        ))
-        sys.exit(1)
-    elif cover_art_map_file is not None and not os.path.isfile(cover_art_map_file):
-        print('{file} is not an existing file, ignoring cover art map'.format(file=cover_art_map_file))
-        cover_art_map_file = None
-
-    # Parse JSON
-    # This file will contain all the metadata you'd like to apply to your MP3 files
-    try:
-        with open(json_config) as f:
-            mp3_metadata = json.load(f)
-    except Exception as e:
-        print('Could not load JSON config: {error}'.format(error=str(e)))
-        sys.exit(1)
-
-    if cover_art_map_file:
-        try:
-            with open(cover_art_map_file) as f:
-                cover_art_map = json.load(f)
-        except Exception as e:
-            print('Could not load cover art map, skipping: {error}'.format(error=str(e)))
-            cover_art_map = None
-    else:
-        cover_art_map = None
-
-    # Check shape of data
-    if not isinstance(mp3_metadata, list):
-        print('Your MP3 metadata JSON object should be a list of properly formatted objects, see README.md for details')
-        sys.exit(1)
-    elif cover_art_map is not None and not isinstance(cover_art_map, dict):
-        print('Your cover art JSON map should be shaped like a dict, see README.md for details, ignoring')
-        cover_art_map = None
-
     # Iterate through metadata object and apply metadata to MP3 file
     successes = failures = 0
 
@@ -247,6 +207,82 @@ def yt_metadata():
         with open(cover_art_map_file, 'w') as f:
             json.dump(cover_art_map, f, indent=4)
 
+# #################################################################################################
+# Main method
+# #################################################################################################
 
 if __name__ == '__main__':
-    yt_metadata()
+    try:
+        # ==================================
+        # Parse/validate args
+        # ==================================
+        args = sys.argv[1:]
+
+        if len(args) < 2:
+            error('wrong args; should be "<mp3-folder> <metadata-config> [<cover-art-config>]"')
+            sys.exit(1)
+        
+        mp3_folder, metadata_file, *rest = args
+        cover_art_file = rest[0] if len(rest) else None
+
+        if not (
+            os.path.isdir(mp3_folder) and 
+            os.path.isfile(metadata_file) and
+            (cover_art_file is None or os.path.isfile(cover_art_file))
+        ):
+            error('check that all paths are existing files/folders')
+            sys.exit(1)
+
+        no_write = False
+
+        # ==================================
+        # Read/validate metadata config data
+        # ==================================
+        try:
+            with open(metadata_file) as f:
+                metadata = json.load(f)
+        except Exception as e:
+            error('could not read metadata config')
+            sys.exit(1)
+
+        # Validate config (list of dicts)
+        if not is_list(metadata) or not all([is_dict(d) for d in metadata]):
+            error('metadata config is not well-formed')
+            sys.exit(1)
+
+        # ==================================
+        # Read/validate album art config data
+        # ==================================
+        try:
+            if cover_art_file:
+                with open(cover_art_file) as f:
+                    cover_art = json.load(f)
+            else:
+                cover_art = {}
+        except Exception as e:
+            error('could not read album art config')
+            sys.exit(1)
+
+        # Validate config (dict of dicts of dicts)
+        if not is_dict(cover_art) or not all([
+            (is_dict(d) and all([is_dict(v) for v in d])) 
+            for d in cover_art
+        ]):
+            error('cover art config is not well-formed')
+            sys.exit(1)
+        
+        # ==================================
+        # Apply metadata
+        # ==================================
+        pass
+
+        # ==================================
+        # Write back to config files
+        # ==================================
+        if no_write:
+            sys.exit(0)
+        
+        pass
+
+    except Exception as e:
+        error(e)
