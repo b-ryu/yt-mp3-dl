@@ -40,7 +40,8 @@ def run_cmd(cmd):
     necessitating an intermediate conversion from M4A
 '''
 def dl_m4a(path, url):
-    run_cmd(['youtube-dl', '-o', path, '-f' '140', url])
+    # TODO: make executable configurable
+    run_cmd(['yt-dlp', '-o', path, '-f' '140', url])
 
 '''
     Runs ffmpeg utility to convert M4A m4a_path to MP3 mp3_path
@@ -169,7 +170,7 @@ if __name__ == '__main__':
             with open(input_file) as f:
                 url_filename_pairs = [parse_url_filename_pair(l) for l in f.readlines()]
         except Exception as e:
-            error('could not parse file "{}"; check README for format'.format(urls_and_filenames))
+            error('could not parse file "{}"; check README for format'.format(input_file))
             sys.exit(1)
 
         # ==================================
